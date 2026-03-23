@@ -2,611 +2,636 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>温泉レーダー</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>♨ 温泉レーダー</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #0a0a0a;
+      background: #0d0400;
+      color: #ff8800;
+      font-family: 'Courier New', Courier, monospace;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       min-height: 100vh;
-      font-family: 'Courier New', monospace;
-      color: #ff8c00;
-      overflow: hidden;
+      padding: 20px 16px 40px;
+      gap: 18px;
     }
 
+    /* ===== HEADER ===== */
+    header {
+      text-align: center;
+    }
     h1 {
-      font-size: 1.1rem;
-      letter-spacing: 0.3em;
-      color: #ffaa33;
-      text-shadow: 0 0 12px #ff8c00;
-      margin-bottom: 10px;
-      text-transform: uppercase;
+      font-size: 1.5rem;
+      letter-spacing: 5px;
+      text-shadow: 0 0 12px #ff5500, 0 0 24px #ff2200;
+      color: #ffaa00;
+    }
+    .subtitle {
+      font-size: 0.7rem;
+      color: #884400;
+      letter-spacing: 2px;
+      margin-top: 4px;
     }
 
-    #device {
+    /* ===== DEVICE (outer casing) ===== */
+    .device {
       position: relative;
-      width: 340px;
-      background: linear-gradient(145deg, #1a1a1a, #111);
-      border: 3px solid #333;
-      border-radius: 20px;
-      padding: 18px 18px 14px;
+      background: radial-gradient(circle at 35% 30%, #cc5500, #7a1800);
+      border-radius: 50%;
+      padding: 14px;
       box-shadow:
-        0 0 40px rgba(255,140,0,0.2),
-        inset 0 2px 4px rgba(255,255,255,0.05),
-        0 8px 32px rgba(0,0,0,0.8);
+        0 0 0 3px #3a0800,
+        0 0 0 5px #cc4400,
+        0 0 30px rgba(255, 80, 0, 0.4),
+        0 8px 30px rgba(0,0,0,0.9),
+        inset 0 2px 6px rgba(255,180,100,0.15);
+    }
+    .device::before {
+      content: '';
+      position: absolute;
+      inset: 14px;
+      border-radius: 50%;
+      background: transparent;
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.7);
+      pointer-events: none;
+      z-index: 10;
     }
 
-    /* Screen bezel */
-    #screen-bezel {
-      background: #000;
+    /* ===== SCREEN ===== */
+    .screen {
       border-radius: 50%;
-      border: 4px solid #222;
+      overflow: hidden;
+      border: 3px solid #220800;
       box-shadow:
         inset 0 0 30px rgba(0,0,0,0.9),
-        inset 0 0 8px rgba(255,140,0,0.05),
-        0 0 20px rgba(255,140,0,0.15);
-      padding: 6px;
-      position: relative;
+        0 0 10px rgba(0,255,60,0.1);
     }
-
-    #radar-canvas {
+    canvas#radar {
       display: block;
-      border-radius: 50%;
     }
 
-    /* Range selector */
-    #controls {
+    /* ===== CONTROLS ===== */
+    .controls {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-top: 12px;
-      padding: 0 4px;
+      gap: 10px;
     }
-
     .btn {
-      background: #1a1a1a;
-      border: 1px solid #444;
-      color: #ff8c00;
-      padding: 5px 12px;
-      border-radius: 6px;
-      font-family: 'Courier New', monospace;
-      font-size: 0.7rem;
+      background: radial-gradient(circle at 40% 35%, #dd5500, #7a1800);
+      color: #ffdd00;
+      border: 2px solid #ff6600;
+      border-radius: 50%;
+      width: 46px;
+      height: 46px;
+      font-size: 1.5rem;
+      line-height: 1;
       cursor: pointer;
-      letter-spacing: 0.1em;
-      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px rgba(255,100,0,0.3), 0 3px 6px rgba(0,0,0,0.6);
+      transition: transform 0.1s, box-shadow 0.1s;
+      user-select: none;
     }
-    .btn:hover { background: #2a1a00; border-color: #ff8c00; box-shadow: 0 0 8px rgba(255,140,0,0.3); }
-    .btn:active { transform: scale(0.95); }
-    .btn.active { background: #3a1a00; border-color: #ffaa33; color: #ffcc66; }
-
-    #range-display {
-      font-size: 0.75rem;
-      color: #ff8c00;
-      text-shadow: 0 0 8px #ff8c00;
-      letter-spacing: 0.15em;
+    .btn:active {
+      transform: scale(0.92);
+      box-shadow: 0 0 6px rgba(255,100,0,0.2), 0 1px 3px rgba(0,0,0,0.6);
     }
-
-    /* Info panel */
-    #info-panel {
-      margin-top: 10px;
-      min-height: 58px;
-      background: #0d0d0d;
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 0.72rem;
-      line-height: 1.5;
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
-
-    #info-name {
-      color: #ffcc66;
+    .btn-search {
+      border-radius: 22px;
+      width: auto;
+      height: 40px;
+      padding: 0 18px;
       font-size: 0.85rem;
-      text-shadow: 0 0 8px rgba(255,200,0,0.5);
-      margin-bottom: 2px;
+      letter-spacing: 2px;
+    }
+    .range-label {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #ffbb00;
+      text-shadow: 0 0 8px #ff6600;
+      min-width: 68px;
+      text-align: center;
+    }
+
+    /* ===== STATUS ===== */
+    #status {
+      font-size: 0.78rem;
+      color: #996633;
+      letter-spacing: 1px;
+      text-align: center;
+      min-height: 1.1em;
+    }
+    #status.error { color: #ff4444; }
+    #status.ok    { color: #44cc88; }
+
+    /* ===== LOADING DOTS ===== */
+    .dot-anim::after {
+      content: '';
+      display: inline-block;
+      animation: dots 1.2s steps(4, end) infinite;
+    }
+    @keyframes dots {
+      0%   { content: ''; }
+      25%  { content: '.'; }
+      50%  { content: '..'; }
+      75%  { content: '...'; }
+    }
+
+    /* ===== ONSEN LIST ===== */
+    #onsen-section {
+      width: 100%;
+      max-width: 380px;
+    }
+    .list-header {
+      font-size: 0.78rem;
+      color: #ff6600;
+      letter-spacing: 2px;
+      border-bottom: 1px solid #331100;
+      padding-bottom: 6px;
+      margin-bottom: 10px;
+    }
+    .onsen-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      margin-bottom: 6px;
+      border-left: 3px solid #ff4400;
+      background: rgba(255,60,0,0.05);
+      border-radius: 0 6px 6px 0;
+      transition: background 0.2s;
+      cursor: default;
+    }
+    .onsen-item:hover {
+      background: rgba(255,60,0,0.13);
+    }
+    .blip-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #ffdd44;
+      box-shadow: 0 0 6px 2px rgba(255,200,0,0.6);
+      flex-shrink: 0;
+      animation: blink 1.4s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.3; transform: scale(0.7); }
+    }
+    .onsen-name {
+      flex: 1;
+      font-size: 0.88rem;
+      color: #ffaa44;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-
-    #info-detail {
-      color: #888;
-    }
-
-    #status-bar {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 8px;
-      padding: 0 4px;
-    }
-
-    #status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #ff8c00;
-      box-shadow: 0 0 6px #ff8c00;
-      animation: blink 1.4s infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.2; }
-    }
-
-    #status-text {
-      font-size: 0.65rem;
-      color: #666;
-      letter-spacing: 0.1em;
-      flex: 1;
-    }
-
-    #count-display {
-      font-size: 0.65rem;
-      color: #ff8c00;
-      letter-spacing: 0.1em;
-    }
-
-    /* Loading overlay */
-    #overlay {
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.85);
-      color: #ff8c00;
+    .onsen-dist {
       font-size: 0.75rem;
-      letter-spacing: 0.2em;
-      z-index: 10;
-      gap: 10px;
+      color: #885533;
+      white-space: nowrap;
     }
-
-    .spinner {
-      width: 30px;
-      height: 30px;
-      border: 2px solid #333;
-      border-top-color: #ff8c00;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    .empty-msg {
+      color: #553311;
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 14px 0;
     }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-<h1>♨ 温泉レーダー</h1>
+<header>
+  <h1>♨ 温泉レーダー ♨</h1>
+  <div class="subtitle">ONSEN RADAR  ·  DAY-USE FACILITIES</div>
+</header>
 
-<div id="device">
-  <div id="screen-bezel">
-    <canvas id="radar-canvas" width="300" height="300"></canvas>
-    <div id="overlay">
-      <div class="spinner"></div>
-      <span id="overlay-text">現在地を取得中...</span>
-    </div>
-  </div>
-
-  <div id="controls">
-    <button class="btn" id="btn-minus">－</button>
-    <span id="range-display">範囲: 5km</span>
-    <button class="btn" id="btn-plus">＋</button>
-    <button class="btn" id="btn-refresh">再検索</button>
-  </div>
-
-  <div id="info-panel">
-    <div id="info-name">温泉を選択してください</div>
-    <div id="info-detail">レーダー上の点をタップ</div>
-  </div>
-
-  <div id="status-bar">
-    <div id="status-dot"></div>
-    <span id="status-text">SCANNING...</span>
-    <span id="count-display">0 SPOTS</span>
+<!-- Radar device -->
+<div class="device">
+  <div class="screen">
+    <canvas id="radar" width="290" height="290"></canvas>
   </div>
 </div>
 
+<!-- Controls -->
+<div class="controls">
+  <button class="btn" id="btn-minus" title="範囲を狭める">－</button>
+  <span class="range-label" id="range-label">5 km</span>
+  <button class="btn" id="btn-plus" title="範囲を広げる">＋</button>
+  <button class="btn btn-search" id="btn-search">再検索</button>
+</div>
+
+<!-- Status line -->
+<div id="status">現在地を取得中…</div>
+
+<!-- Onsen list -->
+<div id="onsen-section"></div>
+
 <script>
-const canvas = document.getElementById('radar-canvas');
-const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height, CX = W/2, CY = H/2, R = W/2 - 4;
+// =====================================================================
+//  CONSTANTS & STATE
+// =====================================================================
+const CANVAS  = document.getElementById('radar');
+const CTX     = CANVAS.getContext('2d');
+const W       = CANVAS.width;
+const H       = CANVAS.height;
+const CX      = W / 2;
+const CY      = H / 2;
+const R       = CX - 10;   // radar circle radius (px)
 
-let userPos = null;
-let onsenList = [];
-let sweepAngle = 0;
-let rangeKm = 5;
-let selectedOnsen = null;
-let animFrame;
-let blipTrails = new Map(); // id -> { angle, strength, x, y }
+const RANGES   = [1, 2, 3, 5, 10, 20];   // km options
+let   rangeIdx = 3;                        // default: 5 km
 
-const RANGES = [1, 2, 5, 10, 20, 50];
-let rangeIdx = 2;
+let userLat    = null;
+let userLon    = null;
+let onsens     = [];          // processed onsen objects
+let blipBright = {};          // index -> brightness 0..1 (lit by sweep)
+let sweepAngle = 0;           // radians, north-based clockwise [0, 2pi)
+let lastTs     = null;
+let searching  = false;
 
-// ---- Fetch onsen via Overpass API ----
-async function fetchOnsen(lat, lon, radiusM) {
-  setStatus('検索中...', 0);
-  const overpassUrl = 'https://overpass-api.de/api/interpreter';
-  const query = `[out:json][timeout:30];
-(
-  node["amenity"="onsen"](around:${radiusM},${lat},${lon});
-  node["leisure"="bathing_place"](around:${radiusM},${lat},${lon});
-  node["tourism"="spa"](around:${radiusM},${lat},${lon});
-  node["amenity"="public_bath"](around:${radiusM},${lat},${lon});
-  node["name"~"温泉|湯|スパ|銭湯|浴"](around:${radiusM},${lat},${lon});
-  way["amenity"="onsen"](around:${radiusM},${lat},${lon});
-  way["leisure"="bathing_place"](around:${radiusM},${lat},${lon});
-  way["tourism"="spa"](around:${radiusM},${lat},${lon});
-  way["amenity"="public_bath"](around:${radiusM},${lat},${lon});
-  way["name"~"温泉|湯|スパ|銭湯|浴"](around:${radiusM},${lat},${lon});
-);
-out center;`;
+const SWEEP_SPEED = 1.3;    // rad/s
+const TRAIL_RAD   = 90 * Math.PI / 180;  // sweep trail length
+const BLIP_DECAY  = 0.55;   // brightness decay per second
+const BLIP_WIN    = 0.12;   // radians — sweep "hit" window
 
-  try {
-    const res = await fetch(overpassUrl, {
-      method: 'POST',
-      body: 'data=' + encodeURIComponent(query)
-    });
-    const data = await res.json();
-    const seen = new Set();
-    const results = [];
-    for (const el of data.elements) {
-      const elLat = el.lat ?? el.center?.lat;
-      const elLon = el.lon ?? el.center?.lon;
-      if (!elLat || !elLon) continue;
-      const name = el.tags?.name || el.tags?.['name:ja'] || '名称不明';
-      const key = `${elLat.toFixed(4)},${elLon.toFixed(4)}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const dist = haversine(lat, lon, elLat, elLon);
-      if (dist > radiusM) continue;
-      results.push({
-        id: el.id,
-        name,
-        lat: elLat,
-        lon: elLon,
-        dist,
-        tags: el.tags || {}
-      });
-    }
-    results.sort((a,b) => a.dist - b.dist);
-    return results;
-  } catch(e) {
-    console.error(e);
-    return [];
-  }
+// Overpass mirrors
+const OVERPASS_URLS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
+let overpassIdx = 0;
+
+// =====================================================================
+//  UTILITIES
+// =====================================================================
+const toRad = d => d * Math.PI / 180;
+
+function normalise(a) {
+  a = a % (Math.PI * 2);
+  return a < 0 ? a + Math.PI * 2 : a;
 }
 
+/** Haversine distance in km */
 function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const dLat = (lat2-lat1) * Math.PI/180;
-  const dLon = (lon2-lon1) * Math.PI/180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R * 2 * Math.asin(Math.sqrt(a));
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2
+          + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Convert onsen geo coords to canvas coords
-function toCanvas(lat, lon) {
-  const rangeM = rangeKm * 1000;
-  const dLat = (lat - userPos.lat) * Math.PI/180 * 6371000;
-  const dLon = (lon - userPos.lon) * Math.PI/180 * 6371000 * Math.cos(userPos.lat * Math.PI/180);
-  // dLat positive = north = up (negative Y on canvas)
-  const cx = CX + (dLon / rangeM) * R;
-  const cy = CY - (dLat / rangeM) * R;
-  return { x: cx, y: cy };
+/** Bearing from (lat1,lon1) to (lat2,lon2) — north-based clockwise [0, 2pi) */
+function bearing(lat1, lon1, lat2, lon2) {
+  const dLon = toRad(lon2 - lon1);
+  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2))
+           - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+  return normalise(Math.atan2(y, x));
 }
 
-// ---- Drawing ----
-function drawRadar() {
-  ctx.clearRect(0, 0, W, H);
+/** north-based clockwise -> canvas angle (0 = east) */
+const northToCanvas = a => a - Math.PI / 2;
 
-  // Clip to circle
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(CX, CY, R, 0, Math.PI*2);
-  ctx.clip();
+/** (dist km, bearing rad) -> canvas (x, y) */
+function toXY(dist, bear) {
+  const radius = Math.min(dist / RANGES[rangeIdx], 1.0) * R;
+  const angle  = northToCanvas(bear);
+  return { x: CX + radius * Math.cos(angle), y: CY + radius * Math.sin(angle) };
+}
 
-  // Background
-  const bgGrad = ctx.createRadialGradient(CX, CY, 0, CX, CY, R);
-  bgGrad.addColorStop(0, '#001800');
-  bgGrad.addColorStop(0.6, '#000e00');
-  bgGrad.addColorStop(1, '#000500');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, W, H);
+function setStatus(msg, cls = '') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className   = cls;
+}
 
-  // Grid rings
-  ctx.strokeStyle = 'rgba(0,200,60,0.15)';
-  ctx.lineWidth = 1;
-  for (let i = 1; i <= 4; i++) {
-    ctx.beginPath();
-    ctx.arc(CX, CY, R * i/4, 0, Math.PI*2);
-    ctx.stroke();
+function formatDist(km) {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// =====================================================================
+//  RADAR DRAWING
+// =====================================================================
+function drawFrame(ts) {
+  if (!lastTs) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.1);
+  lastTs = ts;
+
+  sweepAngle = normalise(sweepAngle + SWEEP_SPEED * dt);
+
+  CTX.clearRect(0, 0, W, H);
+
+  // Screen background
+  const bg = CTX.createRadialGradient(CX, CY, 0, CX, CY, R);
+  bg.addColorStop(0, '#002200');
+  bg.addColorStop(1, '#000d00');
+  CTX.fillStyle = bg;
+  CTX.beginPath();
+  CTX.arc(CX, CY, R, 0, Math.PI * 2);
+  CTX.fill();
+
+  // Sweep trail — fan of translucent arcs
+  const STEPS = 48;
+  for (let i = 0; i < STEPS; i++) {
+    const t  = i / STEPS;
+    const a1 = northToCanvas(sweepAngle - TRAIL_RAD * (1 - t));
+    const a2 = northToCanvas(sweepAngle - TRAIL_RAD * (1 - (i + 1) / STEPS));
+    CTX.beginPath();
+    CTX.moveTo(CX, CY);
+    CTX.arc(CX, CY, R, a1, a2);
+    CTX.closePath();
+    CTX.fillStyle = `rgba(0,255,70,${t * 0.21})`;
+    CTX.fill();
   }
 
-  // Crosshair lines
-  ctx.strokeStyle = 'rgba(0,200,60,0.1)';
-  ctx.beginPath();
-  ctx.moveTo(CX, CY - R); ctx.lineTo(CX, CY + R);
-  ctx.moveTo(CX - R, CY); ctx.lineTo(CX + R, CY);
-  ctx.stroke();
+  // Distance rings
+  [0.25, 0.5, 0.75, 1].forEach(f => {
+    CTX.beginPath();
+    CTX.arc(CX, CY, R * f, 0, Math.PI * 2);
+    CTX.strokeStyle = 'rgba(0,180,50,0.28)';
+    CTX.lineWidth = 1;
+    CTX.stroke();
+  });
+
+  // Distance labels on rings
+  CTX.fillStyle   = 'rgba(0,160,50,0.55)';
+  CTX.font        = '9px Courier New';
+  CTX.textAlign   = 'left';
+  CTX.textBaseline = 'bottom';
+  const km = RANGES[rangeIdx];
+  [[0.25, 1], [0.5, 2], [0.75, 3]].forEach(([f, n]) => {
+    const val = (km * f);
+    const label = val < 1 ? `${Math.round(val*1000)}m` : `${val % 1 === 0 ? val : val.toFixed(1)}km`;
+    CTX.fillText(label, CX + 3, CY - R * f + 1);
+  });
+
+  // Crosshair
+  CTX.strokeStyle = 'rgba(0,180,50,0.35)';
+  CTX.lineWidth   = 1;
+  CTX.setLineDash([4, 6]);
+  CTX.beginPath();
+  CTX.moveTo(CX, CY - R); CTX.lineTo(CX, CY + R);
+  CTX.moveTo(CX - R, CY); CTX.lineTo(CX + R, CY);
+  CTX.stroke();
+  CTX.setLineDash([]);
+
+  // Outer ring
+  CTX.beginPath();
+  CTX.arc(CX, CY, R, 0, Math.PI * 2);
+  CTX.strokeStyle = 'rgba(0,220,70,0.55)';
+  CTX.lineWidth   = 2;
+  CTX.stroke();
 
   // Compass labels
-  ctx.fillStyle = 'rgba(0,220,80,0.5)';
-  ctx.font = '10px Courier New';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  const compassOffset = 10;
-  ctx.fillText('N', CX, CY - R + compassOffset);
-  ctx.fillText('S', CX, CY + R - compassOffset);
-  ctx.fillText('E', CX + R - compassOffset, CY);
-  ctx.fillText('W', CX - R + compassOffset, CY);
+  CTX.fillStyle    = 'rgba(0,220,80,0.65)';
+  CTX.font         = 'bold 10px Courier New';
+  CTX.textAlign    = 'center';
+  CTX.textBaseline = 'middle';
+  CTX.fillText('N', CX,       CY - R + 11);
+  CTX.fillText('S', CX,       CY + R - 11);
+  CTX.fillText('E', CX + R - 11, CY);
+  CTX.fillText('W', CX - R + 11, CY);
 
-  // Range labels
-  ctx.fillStyle = 'rgba(0,200,60,0.35)';
-  ctx.font = '8px Courier New';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  const halfKm = rangeKm / 2;
-  const quarterKm = rangeKm / 4;
-  ctx.fillText(`${(rangeKm).toFixed(rangeKm<1?1:0)}km`, CX + R*0.99, CY - 6);
-  ctx.fillText(`${(halfKm).toFixed(halfKm<1?1:0)}km`, CX + R*0.49, CY - 6);
+  // Sweep line
+  const sa = northToCanvas(sweepAngle);
+  CTX.beginPath();
+  CTX.moveTo(CX, CY);
+  CTX.lineTo(CX + R * Math.cos(sa), CY + R * Math.sin(sa));
+  CTX.strokeStyle = 'rgba(80,255,100,0.9)';
+  CTX.lineWidth   = 1.5;
+  CTX.stroke();
 
-  // Sweep gradient (green glow sector)
-  const sweepGrad = ctx.createConicalGradient
-    ? null  // fallback below
-    : null;
+  // Blips
+  onsens.forEach((o, i) => {
+    if (o.dist > RANGES[rangeIdx]) return;
 
-  // Draw sweep as arc fill
-  ctx.save();
-  ctx.translate(CX, CY);
-  const sweepSpan = Math.PI * 0.28;
-  const grad = ctx.createConicalGradientPolyfill
-    ? null
-    : (() => {
-      // Use radial gradient + rotate trick
-      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
-      g.addColorStop(0, 'rgba(0,255,80,0.0)');
-      g.addColorStop(1, 'rgba(0,255,80,0.0)');
-      return g;
-    })();
-
-  // Sweep sector (manual arc-fill approach)
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.arc(0, 0, R, sweepAngle - sweepSpan, sweepAngle, false);
-  ctx.closePath();
-  const fillGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
-  fillGrad.addColorStop(0, 'rgba(0,255,80,0.0)');
-  fillGrad.addColorStop(0.5, 'rgba(0,255,80,0.04)');
-  fillGrad.addColorStop(1, 'rgba(0,255,80,0.12)');
-  ctx.fillStyle = fillGrad;
-  ctx.fill();
-
-  // Sweep leading edge line
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(R * Math.cos(sweepAngle), R * Math.sin(sweepAngle));
-  ctx.strokeStyle = 'rgba(0,255,80,0.9)';
-  ctx.lineWidth = 1.5;
-  ctx.shadowColor = '#00ff50';
-  ctx.shadowBlur = 8;
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-  ctx.restore();
-
-  // Update blip trails: when sweep passes over an onsen, record it
-  if (onsenList.length > 0) {
-    for (const onsen of onsenList) {
-      const pos = toCanvas(onsen.lat, onsen.lon);
-      const dx = pos.x - CX, dy = pos.y - CY;
-      const blipAngle = Math.atan2(dy, dx);
-      // Normalize sweep and blip angles
-      const sa = ((sweepAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
-      const ba = ((blipAngle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
-      const diff = ((sa - ba + Math.PI*2) % (Math.PI*2));
-      const inSweep = diff < sweepSpan + 0.05;
-      if (inSweep) {
-        blipTrails.set(onsen.id, { x: pos.x, y: pos.y, strength: 1.0, selected: onsen === selectedOnsen });
-      }
+    // check if sweep just passed over this blip
+    const diff = normalise(sweepAngle - o.bearing);
+    if (diff < BLIP_WIN) {
+      blipBright[i] = 1.0;
+    } else {
+      blipBright[i] = Math.max(0, (blipBright[i] ?? 0) - BLIP_DECAY * dt);
     }
-  }
 
-  // Draw blip trails
-  for (const [id, blip] of blipTrails) {
-    if (blip.strength <= 0) { blipTrails.delete(id); continue; }
-    const alpha = blip.strength;
-    const isSelected = blip.selected;
-    const size = isSelected ? 7 : 5;
+    const bri = blipBright[i] ?? 0;
+    const pos = toXY(o.dist, o.bearing);
 
-    ctx.save();
-    ctx.shadowColor = isSelected ? '#ffcc00' : '#00ff80';
-    ctx.shadowBlur = 10 * alpha;
+    // glow halo
+    const grd = CTX.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 13);
+    grd.addColorStop(0, `rgba(255,230,0,${bri * 0.75})`);
+    grd.addColorStop(1, 'rgba(255,100,0,0)');
+    CTX.beginPath();
+    CTX.arc(pos.x, pos.y, 13, 0, Math.PI * 2);
+    CTX.fillStyle = grd;
+    CTX.fill();
 
-    // Outer glow
-    ctx.beginPath();
-    ctx.arc(blip.x, blip.y, size * 1.8, 0, Math.PI*2);
-    ctx.fillStyle = isSelected
-      ? `rgba(255,200,0,${alpha * 0.15})`
-      : `rgba(0,255,100,${alpha * 0.15})`;
-    ctx.fill();
+    // core dot (always slightly visible so you can find them before sweep)
+    CTX.beginPath();
+    CTX.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+    CTX.fillStyle = `rgba(255,210,50,${0.3 + bri * 0.7})`;
+    CTX.fill();
+  });
 
-    // Main dot
-    ctx.beginPath();
-    ctx.arc(blip.x, blip.y, size * 0.55, 0, Math.PI*2);
-    ctx.fillStyle = isSelected
-      ? `rgba(255,220,50,${alpha})`
-      : `rgba(100,255,140,${alpha})`;
-    ctx.fill();
+  // Current position marker
+  CTX.strokeStyle = '#ffffff';
+  CTX.lineWidth   = 1.5;
+  CTX.beginPath();
+  CTX.moveTo(CX - 7, CY); CTX.lineTo(CX + 7, CY);
+  CTX.moveTo(CX, CY - 7); CTX.lineTo(CX, CY + 7);
+  CTX.stroke();
+  CTX.beginPath();
+  CTX.arc(CX, CY, 3, 0, Math.PI * 2);
+  CTX.fillStyle = '#ffffff';
+  CTX.fill();
 
-    ctx.restore();
-    blip.strength -= 0.003;
-  }
-
-  // Center dot (current position)
-  ctx.save();
-  ctx.shadowColor = '#ff8c00';
-  ctx.shadowBlur = 14;
-  ctx.beginPath();
-  ctx.arc(CX, CY, 5, 0, Math.PI*2);
-  ctx.fillStyle = '#ff8c00';
-  ctx.fill();
-  // Inner pulse
-  const pulse = 0.5 + 0.5 * Math.sin(Date.now() * 0.004);
-  ctx.beginPath();
-  ctx.arc(CX, CY, 10 + pulse * 4, 0, Math.PI*2);
-  ctx.strokeStyle = `rgba(255,140,0,${0.6 * pulse})`;
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.restore();
-
-  // Screen overlay (phosphor scanlines + vignette)
-  ctx.save();
-  // Scanlines
-  for (let y = 0; y < H; y += 3) {
-    ctx.fillStyle = 'rgba(0,0,0,0.06)';
-    ctx.fillRect(0, y, W, 1);
-  }
-  // Vignette
-  const vig = ctx.createRadialGradient(CX, CY, R * 0.55, CX, CY, R);
-  vig.addColorStop(0, 'rgba(0,0,0,0)');
-  vig.addColorStop(1, 'rgba(0,0,0,0.5)');
-  ctx.beginPath();
-  ctx.arc(CX, CY, R, 0, Math.PI*2);
-  ctx.fillStyle = vig;
-  ctx.fill();
-  ctx.restore();
-
-  ctx.restore(); // end clip
+  requestAnimationFrame(drawFrame);
 }
 
-function setStatus(text, count) {
-  document.getElementById('status-text').textContent = text;
-  document.getElementById('count-display').textContent = count + ' SPOTS';
+// =====================================================================
+//  GEOLOCATION
+// =====================================================================
+function getPosition() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('このブラウザは位置情報に対応していません'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 12000,
+    });
+  });
 }
 
-function updateInfoPanel(onsen) {
-  if (!onsen) {
-    document.getElementById('info-name').textContent = '温泉を選択してください';
-    document.getElementById('info-detail').textContent = 'レーダー上の点をタップ';
+// =====================================================================
+//  OVERPASS API — day-use onsen only
+// =====================================================================
+async function fetchOnsens(lat, lon, km) {
+  const r = km * 1000;  // -> metres
+
+  // amenity=public_bath  : sento / public onsen baths (always day-use)
+  // bath:type=onsen      : explicitly tagged hot spring (exclude hotels/ryokan)
+  // day_use=yes          : anything explicitly marked as day-use
+  const query = `
+[out:json][timeout:30];
+(
+  node["amenity"="public_bath"](around:${r},${lat},${lon});
+  way["amenity"="public_bath"](around:${r},${lat},${lon});
+  node["bath:type"="onsen"]["tourism"!="hotel"]["tourism"!="ryokan"]["amenity"!="hotel"](around:${r},${lat},${lon});
+  way["bath:type"="onsen"]["tourism"!="hotel"]["tourism"!="ryokan"]["amenity"!="hotel"](around:${r},${lat},${lon});
+  node["day_use"="yes"]["bath:type"="onsen"](around:${r},${lat},${lon});
+  way["day_use"="yes"]["bath:type"="onsen"](around:${r},${lat},${lon});
+);
+out center;
+`.trim();
+
+  let lastErr;
+  for (let t = 0; t < OVERPASS_URLS.length; t++) {
+    const url = OVERPASS_URLS[(overpassIdx + t) % OVERPASS_URLS.length];
+    try {
+      const res = await fetch(url, { method: 'POST', body: query });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      overpassIdx = (overpassIdx + t) % OVERPASS_URLS.length;
+      return json.elements;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
+}
+
+function processElements(elements, lat, lon) {
+  const seen = new Set();
+  const out  = [];
+
+  for (const el of elements) {
+    const eLat = el.lat ?? el.center?.lat;
+    const eLon = el.lon ?? el.center?.lon;
+    if (!eLat || !eLon) continue;
+
+    const name = el.tags?.['name:ja'] || el.tags?.name || '名称不明の温泉';
+    const key  = `${name}|${Math.round(eLat * 500)}|${Math.round(eLon * 500)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    out.push({
+      name,
+      lat: eLat, lon: eLon,
+      dist:    haversine(lat, lon, eLat, eLon),
+      bearing: bearing(lat, lon, eLat, eLon),
+      tags:    el.tags ?? {},
+    });
+  }
+
+  return out.sort((a, b) => a.dist - b.dist);
+}
+
+// =====================================================================
+//  ONSEN LIST
+// =====================================================================
+function renderList() {
+  const section  = document.getElementById('onsen-section');
+  const maxKm    = RANGES[rangeIdx];
+  const inRange  = onsens.filter(o => o.dist <= maxKm);
+
+  if (inRange.length === 0) {
+    section.innerHTML = `<div class="empty-msg">♨ 範囲内に日帰り温泉が見つかりませんでした</div>`;
     return;
   }
-  document.getElementById('info-name').textContent = '♨ ' + onsen.name;
-  const km = (onsen.dist / 1000).toFixed(2);
-  const type = onsen.tags.amenity || onsen.tags.leisure || onsen.tags.tourism || '';
-  document.getElementById('info-detail').textContent =
-    `距離: ${km}km　|　${type || '温泉施設'}`;
+
+  section.innerHTML = `
+    <div class="list-header">♨ 日帰り温泉 &nbsp; ${inRange.length} 件検出</div>
+    ${inRange.map(o => `
+      <div class="onsen-item">
+        <div class="blip-dot"></div>
+        <div class="onsen-name">${escHtml(o.name)}</div>
+        <div class="onsen-dist">${formatDist(o.dist)}</div>
+      </div>
+    `).join('')}
+  `;
 }
 
-function animate() {
-  sweepAngle += 0.022;
-  if (sweepAngle > Math.PI*2) sweepAngle -= Math.PI*2;
-  drawRadar();
-  animFrame = requestAnimationFrame(animate);
-}
+// =====================================================================
+//  MAIN SEARCH
+// =====================================================================
+async function search() {
+  if (searching) return;
+  searching = true;
+  ['btn-minus', 'btn-plus', 'btn-search'].forEach(id =>
+    document.getElementById(id).disabled = true);
 
-// ---- Init ----
-async function init() {
-  showOverlay('現在地を取得中...');
-  if (!navigator.geolocation) {
-    showOverlay('位置情報が利用できません');
-    return;
+  try {
+    setStatus('現在地を取得中…');
+    document.getElementById('status').classList.add('dot-anim');
+
+    const pos = await getPosition();
+    userLat = pos.coords.latitude;
+    userLon = pos.coords.longitude;
+
+    setStatus(`温泉を検索中 (半径 ${RANGES[rangeIdx]} km)…`);
+
+    const elements = await fetchOnsens(userLat, userLon, RANGES[rangeIdx]);
+    onsens     = processElements(elements, userLat, userLon);
+    blipBright = {};
+
+    const count = onsens.filter(o => o.dist <= RANGES[rangeIdx]).length;
+    setStatus(
+      count > 0
+        ? `${count} 件の日帰り温泉を検出しました`
+        : '範囲内に温泉が見つかりませんでした',
+      count > 0 ? 'ok' : ''
+    );
+    renderList();
+
+  } catch (err) {
+    const msg = err.code === 1 ? '位置情報の許可が必要です'
+              : err.code === 2 ? '位置情報を取得できませんでした'
+              : err.code === 3 ? '位置情報の取得がタイムアウトしました'
+              : `エラー: ${err.message}`;
+    setStatus(msg, 'error');
+    document.getElementById('onsen-section').innerHTML =
+      `<div class="empty-msg">🔴 ${escHtml(msg)}</div>`;
+  } finally {
+    document.getElementById('status').classList.remove('dot-anim');
+    searching = false;
+    ['btn-minus', 'btn-plus', 'btn-search'].forEach(id =>
+      document.getElementById(id).disabled = false);
   }
-  navigator.geolocation.getCurrentPosition(async (pos) => {
-    userPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-    hideOverlay();
-    animate();
-    await loadOnsen();
-  }, (err) => {
-    // Demo mode with Tokyo Shinjuku coords
-    userPos = { lat: 35.6896, lon: 139.6917 };
-    hideOverlay();
-    showOverlay('位置情報エラー\nデモモード(新宿)で起動');
-    setTimeout(hideOverlay, 2000);
-    animate();
-    loadOnsen();
-  }, { timeout: 10000, enableHighAccuracy: true });
 }
 
-async function loadOnsen() {
-  setStatus('検索中...', 0);
-  blipTrails.clear();
-  selectedOnsen = null;
-  updateInfoPanel(null);
-  const radiusM = rangeKm * 1000;
-  onsenList = await fetchOnsen(userPos.lat, userPos.lon, radiusM);
-  setStatus('SCANNING', onsenList.length);
-  if (onsenList.length === 0) {
-    document.getElementById('info-name').textContent = '温泉が見つかりません';
-    document.getElementById('info-detail').textContent = '範囲を広げてみてください';
-  }
+// =====================================================================
+//  CONTROLS
+// =====================================================================
+function updateRangeLabel() {
+  document.getElementById('range-label').textContent = `${RANGES[rangeIdx]} km`;
 }
 
-function showOverlay(text) {
-  const ov = document.getElementById('overlay');
-  ov.style.display = 'flex';
-  document.getElementById('overlay-text').textContent = text;
-}
-
-function hideOverlay() {
-  document.getElementById('overlay').style.display = 'none';
-}
-
-// ---- Canvas click / tap ----
-canvas.addEventListener('click', (e) => {
-  if (!onsenList.length) return;
-  const rect = canvas.getBoundingClientRect();
-  const mx = (e.clientX - rect.left) * (W / rect.width);
-  const my = (e.clientY - rect.top) * (H / rect.height);
-
-  let nearest = null;
-  let minDist = 18;
-  for (const onsen of onsenList) {
-    const pos = toCanvas(onsen.lat, onsen.lon);
-    const d = Math.hypot(mx - pos.x, my - pos.y);
-    if (d < minDist) { minDist = d; nearest = onsen; }
-  }
-  if (nearest) {
-    selectedOnsen = nearest;
-    // Update selected state in blip trails
-    for (const [id, blip] of blipTrails) {
-      blip.selected = false;
-    }
-    const pos = toCanvas(nearest.lat, nearest.lon);
-    blipTrails.set(nearest.id, { x: pos.x, y: pos.y, strength: 1.0, selected: true });
-    updateInfoPanel(nearest);
-  }
-});
-
-// ---- Buttons ----
 document.getElementById('btn-minus').addEventListener('click', () => {
-  if (rangeIdx > 0) {
-    rangeIdx--;
-    rangeKm = RANGES[rangeIdx];
-    document.getElementById('range-display').textContent = `範囲: ${rangeKm}km`;
-    loadOnsen();
-  }
+  if (rangeIdx > 0) { rangeIdx--; updateRangeLabel(); search(); }
 });
-
 document.getElementById('btn-plus').addEventListener('click', () => {
-  if (rangeIdx < RANGES.length - 1) {
-    rangeIdx++;
-    rangeKm = RANGES[rangeIdx];
-    document.getElementById('range-display').textContent = `範囲: ${rangeKm}km`;
-    loadOnsen();
-  }
+  if (rangeIdx < RANGES.length - 1) { rangeIdx++; updateRangeLabel(); search(); }
 });
+document.getElementById('btn-search').addEventListener('click', () => search());
 
-document.getElementById('btn-refresh').addEventListener('click', () => {
-  loadOnsen();
-});
-
-init();
+// =====================================================================
+//  BOOT
+// =====================================================================
+updateRangeLabel();
+requestAnimationFrame(drawFrame);
+search();
 </script>
 </body>
 </html>
