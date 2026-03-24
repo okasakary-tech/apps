@@ -527,7 +527,8 @@ function processElements(elements, lat, lon) {
     const eLon = el.lon ?? el.center?.lon;
     if (!eLat || !eLon) continue;
 
-    const name = el.tags?.['name:ja'] || el.tags?.name || '名称不明の温泉';
+    const name = el.tags?.['name:ja'] || el.tags?.name || '名称未登録の温泉';
+
     const key  = `${name}|${Math.round(eLat * 500)}|${Math.round(eLon * 500)}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -623,8 +624,8 @@ async function search() {
     renderList();
 
   } catch (err) {
+    if (err.name === 'AbortError') return;   // キャンセルは無視（dot-anim はそのまま）
     statusEl.classList.remove('dot-anim');
-    if (err.name === 'AbortError') return;   // キャンセルは無視
     const msg = err.code === 1 ? '位置情報の許可が必要です'
               : err.code === 2 ? '位置情報を取得できませんでした'
               : err.code === 3 ? '位置情報の取得がタイムアウトしました'
