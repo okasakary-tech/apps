@@ -1201,12 +1201,67 @@ function playCurrentAudio() {
   speak(S.questions[S.idx].englishWord);
 }
 
-function speak(text) {
+// ---- TTS helpers ----
+function _loadVoices() {
+  return new Promise(resolve => {
+    const vs = window.speechSynthesis.getVoices();
+    if (vs.length) { resolve(vs); return; }
+    window.speechSynthesis.onvoiceschanged = () => {
+      resolve(window.speechSynthesis.getVoices());
+    };
+    setTimeout(() => resolve(window.speechSynthesis.getVoices()), 1500);
+  });
+}
+let _cachedVoice = null;
+async function _getBestVoice() {
+  if (_cachedVoice) return _cachedVoice;
+  const voices = await _loadVoices();
+  const preferred = ['Samantha','Google US English','Microsoft Aria Online (Natural)','Microsoft Aria','Microsoft Zira','Alex'];
+  for (const name of preferred) {
+    const v = voices.find(v => v.name.includes(name));
+    if (v) { _cachedVoice = v; return v; }
+  }
+  const enUS = voices.filter(v => v.lang === 'en-US' || v.lang === 'en_US');
+  _cachedVoice = enUS.find(v => !v.localService) || enUS[0] || null;
+  return _cachedVoice;
+}
+async function speak(text) {
   if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US'; u.rate = 0.85;
+  u.lang = 'en-US'; u.rate = 0.85; u.pitch = 1.0;
+  const voice = await _getBestVoice();
+  if (voice) u.voice = voice;
   window.speechSynthesis.speak(u);
+}
+
+// ---- Sound effects ----
+function playCorrectSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[0, 880], [0.13, 1320]].forEach(([t, freq]) => {
+      const osc = ctx.createOscillator(); const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      g.gain.setValueAtTime(0, ctx.currentTime + t);
+      g.gain.linearRampToValueAtTime(0.32, ctx.currentTime + t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.28);
+      osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + 0.3);
+    });
+  } catch(e) {}
+}
+function playWrongSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.38);
+    g.gain.setValueAtTime(0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.42);
+  } catch(e) {}
 }
 
 // =====================================================
@@ -1276,6 +1331,8 @@ function record(userAnswer, isCorrect) {
 }
 
 function feedback(isCorrect, correct) {
+  if (isCorrect) playCorrectSound();
+  else           playWrongSound();
   const fb = document.getElementById('feedback');
   fb.className = 'feedback ' + (isCorrect ? 'is-correct' : 'is-wrong');
   fb.innerHTML = isCorrect
