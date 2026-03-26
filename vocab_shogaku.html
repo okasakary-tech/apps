@@ -1156,6 +1156,8 @@ function renderQuestion() {
       }
     }
 
+    // iOS は setTimeout 内の focus() を無視するため即時呼び出しも行う
+    inp.focus();
     setTimeout(() => {
       inp.focus();
       // Lv.1: カーソルをプレフィルの末尾に置く
