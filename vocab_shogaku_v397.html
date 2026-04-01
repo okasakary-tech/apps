@@ -94,24 +94,20 @@
       line-height: 1;
       overflow: visible;
     }
-    /* ボタン内ルビ — inline-flex で確実に上配置 */
+    /* ボタン内ルビ — ネイティブrubyレンダリングを使用 */
     .btn ruby {
-      display: inline-flex;
-      flex-direction: column-reverse;
-      align-items: center;
-      vertical-align: bottom;
-      line-height: 1.2;
+      ruby-align: center;
     }
     .btn ruby rt {
       font-size: 0.55em;
-      line-height: 1.3;
       white-space: nowrap;
       opacity: 0.8;
       font-weight: normal;
       font-family: var(--font);
       color: currentColor;
     }
-    .btn.has-ruby { padding-top: 0.55em; padding-bottom: 0.45em; }
+    /* ルビ付きボタン: ルビが上部に収まるよう余白と baseline 揃えを設定 */
+    .btn { padding-top: 1em; padding-bottom: 0.5em; align-items: baseline; }
     .btn:active { transform: scale(0.96); opacity: 0.82; }
 
     .btn-blue    { background: var(--primary); color: white; }
@@ -555,6 +551,11 @@
       vertical-align: middle;
       word-break: break-all;
     }
+    /* 正解（英語スペル）列は折り返さない */
+    .ans-table td.td-correct {
+      white-space: nowrap;
+      word-break: normal;
+    }
     .td-c { text-align: center; }
     tr.wrong-row { background: #fff8f8; }
 
@@ -943,7 +944,8 @@
       margin-bottom: 10px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      flex-wrap: wrap;
+      gap: 6px 8px;
       color: var(--ink);
       letter-spacing: -0.01em;
     }
@@ -1111,6 +1113,9 @@
     .wl-close {
       background: none; border: none; font-size: 1.4rem;
       cursor: pointer; color: var(--ink-3); line-height: 1;
+      padding: 8px; margin: -8px;
+      min-width: 44px; min-height: 44px;
+      display: flex; align-items: center; justify-content: center;
     }
     .wl-section { margin-bottom: 16px; }
     .wl-section-head {
@@ -1447,9 +1452,9 @@
         <div id="result-next-action" style="margin:16px 0 10px"></div>
         <div class="result-btns">
           <button class="btn btn-blue" onclick="showScreen(S.returnScreen||'welcome')">🏠 ホームへ</button>
-          <button class="btn btn-green" onclick="retryQuiz()">🔁 おなじ<ruby>条件<rt>じょうけん</rt></ruby>でもう<ruby>一度<rt>いちど</rt></ruby></button>
+          <button class="btn btn-green" onclick="retryQuiz()">🔁 <ruby>同<rt>おな</rt></ruby>じ<ruby>条件<rt>じょうけん</rt></ruby>でもう<ruby>一度<rt>いちど</rt></ruby></button>
           <button class="btn btn-orange" id="btn-retry-wrong" onclick="retryWrongOnly()" style="display:none">😓 <ruby>間違<rt>まちが</rt></ruby>いだけ<ruby>復習<rt>ふくしゅう</rt></ruby></button>
-          <button class="btn btn-outline" id="btn-filter" onclick="toggleWrongFilter()">❌ <ruby>間違<rt>まちが</rt></ruby>いだけみる</button>
+          <button class="btn btn-outline" id="btn-filter" onclick="toggleWrongFilter()">❌ <ruby>間違<rt>まちが</rt></ruby>いだけ<ruby>見<rt>み</rt></ruby>る</button>
         </div>
       </div>
       <div style="overflow-x:auto">
@@ -1505,7 +1510,7 @@
     <div class="guide-section">
       <div class="guide-section-title">
         🧠 <ruby>科学<rt>かがく</rt></ruby>が<ruby>証明<rt>しょうめい</rt></ruby>した<ruby>覚<rt>おぼ</rt></ruby>え<ruby>方<rt>かた</rt></ruby>
-        <span class="guide-badge">けんきゅう<ruby>済<rt>ずみ</rt></ruby></span>
+        <span class="guide-badge"><ruby>研究<rt>けんきゅう</rt></ruby><ruby>済<rt>ずみ</rt></ruby></span>
       </div>
       <p class="guide-tip" style="margin-bottom:10px">
         <b>① クイズで<ruby>覚<rt>おぼ</rt></ruby>える（テスト<ruby>効果<rt>こうか</rt></ruby>）</b><br>
@@ -1619,7 +1624,7 @@
     <div class="history-top-bar">
       <h1 style="margin:0"><ruby>学習履歴<rt>がくしゅうりれき</rt></ruby></h1>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-gray" onclick="confirmClearHistory()">🗑 <ruby>履歴<rt>りれき</rt></ruby>をけす</button>
+        <button class="btn btn-gray" onclick="confirmClearHistory()">🗑 <ruby>履歴<rt>りれき</rt></ruby>を<ruby>消<rt>け</rt></ruby>す</button>
         <button class="btn btn-blue" onclick="showScreen('welcome')">← ホーム</button>
       </div>
     </div>
@@ -1645,7 +1650,7 @@
   <div style="background:#fff;margin:20px auto;border-radius:16px;max-width:480px;width:92%;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,0.3)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <h2 style="margin:0;font-size:1.1rem">😓 <ruby>苦手単語<rt>にがてたんご</rt></ruby>リスト</h2>
-      <button onclick="closeWeakModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888">✕</button>
+      <button onclick="closeWeakModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888;padding:8px;margin:-8px;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
     <div id="weak-modal-body" style="font-size:0.92rem"></div>
   </div>
@@ -1679,9 +1684,9 @@
 <!-- ===== 履歴クリア確認 ===== -->
 <div id="clear-modal" class="modal-overlay hidden">
   <div class="modal">
-    <h2><ruby>履歴<rt>りれき</rt></ruby>を<ruby>全部<rt>ぜんぶ</rt></ruby>けす？</h2>
+    <h2><ruby>履歴<rt>りれき</rt></ruby>を<ruby>全部<rt>ぜんぶ</rt></ruby><ruby>消<rt>け</rt></ruby>す？</h2>
     <div class="modal-btns">
-      <button class="btn btn-red-out" style="padding:10px 24px;font-size:0.95rem" onclick="clearHistory()">けす</button>
+      <button class="btn btn-red-out" style="padding:10px 24px;font-size:0.95rem" onclick="clearHistory()"><ruby>消<rt>け</rt></ruby>す</button>
       <button class="btn btn-gray"    style="padding:10px 24px;font-size:0.95rem" onclick="closeModal('clear-modal')">やめる</button>
     </div>
   </div>
@@ -1796,6 +1801,7 @@ const S = {
 function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo(0, 0);
   if (name === 'welcome') updateAchievements();
   if (name === 'home') updateHomeAchievements();
 }
@@ -2134,6 +2140,7 @@ function renderQuestion() {
   const q   = S.questions[S.idx];
   const tot = S.questions.length;
 
+  window.scrollTo(0, 0);
   document.getElementById('q-current').textContent = S.idx + 1;
   document.getElementById('q-total').textContent   = tot;
   updateScore();
@@ -2419,12 +2426,16 @@ function feedback(isCorrect, correct) {
     // 5連続以上で星を飛ばす
     if (currentStreak >= 5) spawnStars();
 
-    // 正解: 0.2秒後に自動次問（btn-next は非表示）
+    // 正解: 0.35秒後に自動次問（btn-next は非表示）
     document.getElementById('btn-next').classList.add('hidden');
-    autoAdvanceTimer = setTimeout(nextQuestion, 200);
+    autoAdvanceTimer = setTimeout(nextQuestion, 350);
   } else {
     fb.innerHTML = '❌ ざんねん<br><span style="font-size:0.88rem"><ruby>答<rt>こた</rt></ruby>え：<strong>' + addRuby(correct) + '</strong></span>';
     document.getElementById('btn-next').classList.remove('hidden');
+    // 日→英・スペル問題では不正解時に正しい発音を再生する
+    if (S.quizType !== 'en_jp') {
+      speak(S.questions[S.idx].englishWord);
+    }
   }
 
   fb.classList.remove('hidden');
@@ -2605,8 +2616,11 @@ function renderAnswerTable(tbodyId, answers, wrongOnly) {
       ? `<span class="badge-ok">✅</span> <span class="ans-ok">${addRuby(a.userAnswer)}</span>`
       : `<span class="badge-ng">❌</span> <span class="ans-ng">${addRuby(a.userAnswer)}</span>`;
 
-    // 正解（日本語の場合ルビ付き）
+    // 正解（日本語の場合ルビ付き）— スペル問題では折り返さない
     const td4 = document.createElement('td');
+    if (S.quizType === 'jp_en_spell_type' || S.quizType === 'jp_en_spell_mc') {
+      td4.className = 'td-correct';
+    }
     td4.innerHTML = `<strong>${addRuby(a.correct)}</strong>`;
 
     const td5 = document.createElement('td');
